@@ -23,6 +23,16 @@
     a { color: #0066cc; text-decoration: none; }
     a:hover { text-decoration: underline; }
     ul { list-style-type: disc; padding-left: 25px; }
+    #calendar-events { margin-top: 10px; }
+    #calendar-events ul { list-style-type: none; padding-left: 0; }
+    #calendar-events li { 
+      margin-bottom: 12px; 
+      padding: 10px; 
+      background: #f9f9f9; 
+      border-radius: 6px; 
+    }
+    #calendar-events .event-summary { font-weight: bold; }
+    #calendar-events .event-date { color: #555; font-size: 0.95em; }
     footer { margin-top: 40px; text-align: center; font-size: 0.9em; color: #777; }
   </style>
 </head>
@@ -48,7 +58,6 @@
   <ul>
     <li><a href="https://bible.usccb.org/readings" target="_blank">Today's Readings – United States Conference of Catholic Bishops</a></li>
   </ul>
-  <!-- Optional: Add specific date link, e.g. for Jan 19, 2026: <li><a href="https://bible.usccb.org/bible/readings/011926.cfm">January 19, 2026 Readings</a></li> -->
 
   <h3>OCIA Resources</h3>
   <ul>
@@ -57,18 +66,94 @@
     <li><a href="https://hallow.com/" target="_blank">Hallow App</a></li>
     <li><a href="https://www.catholic.com/" target="_blank">Catholic Answers</a></li>
     <li><a href="https://formed.org/" target="_blank">Formed – On Demand Catholic Content</a></li>
-    <!-- Add more as needed -->
   </ul>
 
-  <h3>Calendar</h3>
-  <p>OCIA Meetings: Sundays at 12:00 PM</p>
-  <p>Makeup Sessions: Tuesdays at 6:00 PM – 7:00 PM</p>
-  <ul>
-    <li>January 11, 2026 – OCIA Session</li>
-    <li>January 18, 2026 – OCIA Session</li>
-    <li>January 25, 2026 – OCIA Session</li>
-    <!-- Add more dates or embed a Google Calendar iframe here for easier updates -->
-  </ul>
+  <h3>OCIA Calendar</h3>
+  <p>Upcoming meetings and sessions (loaded directly from parish calendar – auto-updates when the source changes):</p>
+  <div id="calendar-events">Loading events...</div>
+
+  <!-- JavaScript to parse and display the .ics file -->
+  <script type="module">
+    import ICAL from "https://unpkg.com/ical.js@2.2.1/dist/ical.min.js";
+
+    const icsUrl = "https://stthomascda.org/icalendar434090.ics";
+    const eventsContainer = document.getElementById("calendar-events");
+
+    async function loadAndDisplayCalendar() {
+      try {
+        const response = await fetch(icsUrl);
+        if (!response.ok) throw new Error("Failed to fetch calendar");
+        const icsText = await response.text();
+
+        const jcal = ICAL.parse(icsText);
+        const comp = new ICAL.Component(jcal);
+        let vevents = comp.getAllSubcomponents("vevent");
+
+        const now = new Date();
+        let upcomingEvents = [];
+
+        vevents.forEach(vevent => {
+          const event = new ICAL.Event(vevent);
+
+          // Handle recurring events (simple expansion for next occurrences)
+          if (event.isRecurring()) {
+            const iter = event.iterator();
+            let next = iter.next();
+            let count = 0;
+            while (next && count < 10) {  // Limit to next 10 instances to avoid overload
+              const startDate = next.toJSDate();
+              if (startDate > now) {
+                upcomingEvents.push({
+                  summary: event.summary,
+                  start: startDate,
+                  end: event.endDate ? event.endDate.toJSDate() : null
+                });
+              }
+              next = iter.next();
+              count++;
+            }
+          } else {
+            const startDate = event.startDate.toJSDate();
+            if (startDate > now) {
+              upcomingEvents.push({
+                summary: event.summary,
+                start: startDate,
+                end: event.endDate ? event.endDate.toJSDate() : null
+              });
+            }
+          }
+        });
+
+        // Sort by start date
+        upcomingEvents.sort((a, b) => a.start - b.start);
+
+        if (upcomingEvents.length === 0) {
+          eventsContainer.innerHTML = "<p>No upcoming events found.</p>";
+          return;
+        }
+
+        let html = "<ul>";
+        upcomingEvents.forEach(ev => {
+          const dateStr = ev.start.toLocaleDateString("en-US", {
+            weekday: "long", month: "long", day: "numeric", year: "numeric"
+          });
+          const timeStr = ev.start.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) +
+                          (ev.end ? " – " + ev.end.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : "");
+          html += `<li>
+            <div class="event-summary">${ev.summary}</div>
+            <div class="event-date">${dateStr} at ${timeStr}</div>
+          </li>`;
+        });
+        html += "</ul>";
+        eventsContainer.innerHTML = html;
+      } catch (error) {
+        console.error("Error loading calendar:", error);
+        eventsContainer.innerHTML = "<p>Unable to load calendar events right now. Please check back later or contact the coordinators.</p>";
+      }
+    }
+
+    loadAndDisplayCalendar();
+  </script>
 
   <footer>
     <p>&copy; Saint Thomas the Apostle Parish | Coeur d'Alene, Idaho</p>
