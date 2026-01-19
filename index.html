@@ -4,6 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Becoming Catholic - OCIA | Saint Thomas the Apostle</title>
+
+  <!-- FullCalendar CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.20/index.global.min.css" rel="stylesheet">
+
   <style>
     body { 
       font-family: Arial, sans-serif; 
@@ -23,16 +27,14 @@
     a { color: #0066cc; text-decoration: none; }
     a:hover { text-decoration: underline; }
     ul { list-style-type: disc; padding-left: 25px; }
-    #calendar-events { margin-top: 10px; }
-    #calendar-events ul { list-style-type: none; padding-left: 0; }
-    #calendar-events li { 
-      margin-bottom: 12px; 
-      padding: 10px; 
-      background: #f9f9f9; 
-      border-radius: 6px; 
+    #calendar { 
+      max-width: 100%; 
+      margin: 20px 0; 
+      background: white; 
+      border-radius: 8px; 
+      overflow: hidden; 
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     }
-    #calendar-events .event-summary { font-weight: bold; }
-    #calendar-events .event-date { color: #555; font-size: 0.95em; }
     footer { margin-top: 40px; text-align: center; font-size: 0.9em; color: #777; }
   </style>
 </head>
@@ -69,90 +71,96 @@
   </ul>
 
   <h3>OCIA Calendar</h3>
-  <p>Upcoming meetings and sessions (loaded directly from parish calendar – auto-updates when the source changes):</p>
-  <div id="calendar-events">Loading events...</div>
+  <p>Upcoming meetings and sessions (interactive month view – loaded directly from parish calendar):</p>
+  <div id="calendar"></div>
 
-  <!-- JavaScript to parse and display the .ics file -->
-  <script type="module">
-    import ICAL from "https://unpkg.com/ical.js@2.2.1/dist/ical.min.js";
+  <!-- ical.js for parsing ICS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ical.js/1.5.0/ical.min.js"></script>
 
-    const icsUrl = "https://stthomascda.org/icalendar434090.ics";
-    const eventsContainer = document.getElementById("calendar-events");
+  <!-- FullCalendar JS (global bundle includes core + dayGrid plugin) -->
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.20/index.global.min.js"></script>
 
-    async function loadAndDisplayCalendar() {
-      try {
-        const response = await fetch(icsUrl);
-        if (!response.ok) throw new Error("Failed to fetch calendar");
-        const icsText = await response.text();
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const calendarEl = document.getElementById('calendar');
+      const calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',          // Month grid view
+        headerToolbar: {
+          left: 'prev,next today',
+          center: 'title',
+          right: 'dayGridMonth,timeGridWeek,listWeek'  // Optional: add week/list views
+        },
+        height: 'auto',                       // Auto-adjust height
+        events: function(fetchInfo, successCallback, failureCallback) {
+          const icsUrl = 'https://stthomascda.org/icalendar434090.ics';
 
-        const jcal = ICAL.parse(icsText);
-        const comp = new ICAL.Component(jcal);
-        let vevents = comp.getAllSubcomponents("vevent");
+          fetch(icsUrl)
+            .then(response => {
+              if (!response.ok) throw new Error('Failed to fetch ICS');
+              return response.text();
+            })
+            .then(icsText => {
+              const jcal = ICAL.parse(icsText);
+              const comp = new ICAL.Component(jcal);
+              const vevents = comp.getAllSubcomponents('vevent');
 
-        const now = new Date();
-        let upcomingEvents = [];
+              const events = [];
 
-        vevents.forEach(vevent => {
-          const event = new ICAL.Event(vevent);
+              vevents.forEach(vevent => {
+                const event = new ICAL.Event(vevent);
+                const now = new Date();
+                const futureLimit = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate()); // Show up to 1 year ahead
 
-          // Handle recurring events (simple expansion for next occurrences)
-          if (event.isRecurring()) {
-            const iter = event.iterator();
-            let next = iter.next();
-            let count = 0;
-            while (next && count < 10) {  // Limit to next 10 instances to avoid overload
-              const startDate = next.toJSDate();
-              if (startDate > now) {
-                upcomingEvents.push({
-                  summary: event.summary,
-                  start: startDate,
-                  end: event.endDate ? event.endDate.toJSDate() : null
-                });
-              }
-              next = iter.next();
-              count++;
-            }
-          } else {
-            const startDate = event.startDate.toJSDate();
-            if (startDate > now) {
-              upcomingEvents.push({
-                summary: event.summary,
-                start: startDate,
-                end: event.endDate ? event.endDate.toJSDate() : null
+                if (event.isRecurring()) {
+                  const iter = event.iterator();
+                  let next = iter.next();
+                  let count = 0;
+                  while (next && count < 50 && next.toJSDate() < futureLimit) {  // Limit to prevent overload
+                    const start = next.toJSDate();
+                    if (start > now) {
+                      events.push({
+                        title: event.summary || 'OCIA Event',
+                        start: start.toISOString(),
+                        end: event.hasEnd() ? event.endDate.toJSDate().toISOString() : null,
+                        allDay: !event.startDate.isDate // Infer all-day if no time component
+                      });
+                    }
+                    next = iter.next();
+                    count++;
+                  }
+                } else {
+                  const start = event.startDate.toJSDate();
+                  if (start > now) {
+                    events.push({
+                      title: event.summary || 'OCIA Event',
+                      start: start.toISOString(),
+                      end: event.hasEnd() ? event.endDate.toJSDate().toISOString() : null,
+                      allDay: !event.startDate.isDate
+                    });
+                  }
+                }
               });
-            }
+
+              successCallback(events);
+            })
+            .catch(error => {
+              console.error('Calendar error:', error);
+              failureCallback(error);
+            });
+        },
+        eventDidMount: function(info) {
+          // Optional tooltip on hover
+          info.el.title = info.event.title + ' (' + info.event.start.toLocaleString() + ')';
+        },
+        loading: function(isLoading) {
+          if (isLoading) {
+            calendarEl.innerHTML = '<p style="text-align:center;padding:40px;">Loading calendar...</p>';
           }
-        });
-
-        // Sort by start date
-        upcomingEvents.sort((a, b) => a.start - b.start);
-
-        if (upcomingEvents.length === 0) {
-          eventsContainer.innerHTML = "<p>No upcoming events found.</p>";
-          return;
         }
+      });
 
-        let html = "<ul>";
-        upcomingEvents.forEach(ev => {
-          const dateStr = ev.start.toLocaleDateString("en-US", {
-            weekday: "long", month: "long", day: "numeric", year: "numeric"
-          });
-          const timeStr = ev.start.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) +
-                          (ev.end ? " – " + ev.end.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : "");
-          html += `<li>
-            <div class="event-summary">${ev.summary}</div>
-            <div class="event-date">${dateStr} at ${timeStr}</div>
-          </li>`;
-        });
-        html += "</ul>";
-        eventsContainer.innerHTML = html;
-      } catch (error) {
-        console.error("Error loading calendar:", error);
-        eventsContainer.innerHTML = "<p>Unable to load calendar events right now. Please check back later or contact the coordinators.</p>";
-      }
-    }
-
-    loadAndDisplayCalendar();
+      calendar.render();
+    });
   </script>
 
   <footer>
