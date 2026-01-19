@@ -23,18 +23,18 @@
     }
     h1, h2, h3 { 
       font-family: 'Playfair Display', serif; 
-      color: #1a3c6d;  /* Deep navy blue - primary accent */
+      color: #1a3c6d; 
       font-weight: 700;
       margin: 1.5em 0 0.6em;
     }
     h1 { font-size: 2.6em; text-align: center; }
     h2 { font-size: 2em; }
-    h3 { font-size: 1.5em; color: #2c5282; }  /* Slightly lighter blue */
+    h3 { font-size: 1.5em; color: #2c5282; }
 
     p { margin: 1.2em 0; font-size: 1.05em; }
 
     a { 
-      color: #2563eb;  /* Vibrant blue links */
+      color: #2563eb; 
       text-decoration: none; 
       font-weight: 500;
     }
@@ -51,12 +51,32 @@
     li { margin-bottom: 0.8em; }
 
     .contact { 
-      background: #f8fafc;  /* Very light blue-gray */
+      display: flex;
+      flex-wrap: wrap;
+      gap: 30px;
+      background: #f8fafc; 
       padding: 30px; 
       border-radius: 10px; 
       border: 1px solid #e2e8f0;
       margin: 35px 0;
       box-shadow: 0 4px 12px rgba(0,0,0,0.06); 
+    }
+
+    .contact-text {
+      flex: 1 1 300px; /* Takes most space on wide screens */
+    }
+
+    .contact-image {
+      flex: 0 0 auto;
+      text-align: center;
+    }
+
+    .contact-image img {
+      max-width: 300px;
+      height: auto;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      object-fit: cover;
     }
 
     #calendar { 
@@ -78,7 +98,7 @@
       padding-top: 25px;
     }
 
-    /* Optional header/banner area */
+    /* Header with logo */
     .site-header {
       text-align: center;
       margin-bottom: 40px;
@@ -90,13 +110,23 @@
       height: auto;
       margin-bottom: 15px;
     }
+
+    /* Responsive: stack contact on small screens */
+    @media (max-width: 768px) {
+      .contact {
+        flex-direction: column;
+      }
+      .contact-image img {
+        max-width: 100%;
+      }
+    }
   </style>
 </head>
 <body>
 
   <div class="site-header">
-    <!-- Upload your parish logo or banner to repo as assets/parish-header.jpg -->
-    <!-- <img src="assets/parish-header.jpg" alt="Saint Thomas the Apostle Parish"> -->
+    <!-- Parish OCIA logo - upload to repo root or assets/ -->
+    <img src="stthomasocia_logo.png" alt="Saint Thomas OCIA Logo">
     <h1>Becoming Catholic</h1>
   </div>
 
@@ -108,10 +138,16 @@
   <p>Becoming Catholic is about more than learning scripture and rituals; it's about discovering how to be a disciple of the Lord! We welcome all newcomers to the Catholic faith — whether unbaptized, baptized, seeking confirmation, or simply searching for God.</p>
 
   <div class="contact">
-    <h3>Contact</h3>
-    <p>OCIA Coordinators: Rodney & Bessie Geilenfeldt</p>
-    <p>Email: <a href="mailto:ocia@stthomascda.org">ocia@stthomascda.org</a></p>
-    <p><a href="https://forms.gle/aE6iyy3RnqoAAzbh6" target="_blank">OCIA Inquirer Form</a> (Google Form – fill out to get started!)</p>
+    <div class="contact-text">
+      <h3>Contact</h3>
+      <p>OCIA Coordinators: Rodney & Bessie Geilenfeldt</p>
+      <p>Email: <a href="mailto:ocia@stthomascda.org">ocia@stthomascda.org</a></p>
+      <p><a href="https://forms.gle/aE6iyy3RnqoAAzbh6" target="_blank">OCIA Inquirer Form</a> (Google Form – fill out to get started!)</p>
+    </div>
+    <div class="contact-image">
+      <!-- Photo of Rodney & Bessie - upload to repo root or assets/ -->
+      <img src="rodney_bessie_ocia_contact.webp" alt="Rodney & Bessie Geilenfeldt, OCIA Coordinators">
+    </div>
   </div>
 
   <h3>Today's Readings</h3>
