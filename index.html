@@ -5,42 +5,101 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Becoming Catholic - OCIA | Saint Thomas the Apostle</title>
 
+  <!-- Google Fonts for elegant, parish-appropriate typography -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+
   <!-- FullCalendar CSS -->
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.20/index.global.min.css" rel="stylesheet">
 
   <style>
     body { 
-      font-family: Arial, sans-serif; 
-      max-width: 900px; 
+      font-family: 'Roboto', Arial, Helvetica, sans-serif; 
+      max-width: 960px; 
       margin: 0 auto; 
-      padding: 20px; 
-      line-height: 1.6; 
-      color: #333; 
+      padding: 40px 20px; 
+      line-height: 1.7; 
+      color: #333333; 
+      background: #ffffff; 
     }
-    h1, h2, h3 { color: #2c3e50; }
+    h1, h2, h3 { 
+      font-family: 'Playfair Display', serif; 
+      color: #1a3c6d;  /* Deep navy blue - primary accent */
+      font-weight: 700;
+      margin: 1.5em 0 0.6em;
+    }
+    h1 { font-size: 2.6em; text-align: center; }
+    h2 { font-size: 2em; }
+    h3 { font-size: 1.5em; color: #2c5282; }  /* Slightly lighter blue */
+
+    p { margin: 1.2em 0; font-size: 1.05em; }
+
+    a { 
+      color: #2563eb;  /* Vibrant blue links */
+      text-decoration: none; 
+      font-weight: 500;
+    }
+    a:hover { 
+      text-decoration: underline; 
+      color: #1d4ed8;
+    }
+
+    ul { 
+      list-style-type: disc; 
+      padding-left: 30px; 
+      margin: 1em 0;
+    }
+    li { margin-bottom: 0.8em; }
+
     .contact { 
-      background: #f8f8f8; 
-      padding: 20px; 
-      border-radius: 8px; 
-      margin: 20px 0; 
+      background: #f8fafc;  /* Very light blue-gray */
+      padding: 30px; 
+      border-radius: 10px; 
+      border: 1px solid #e2e8f0;
+      margin: 35px 0;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06); 
     }
-    a { color: #0066cc; text-decoration: none; }
-    a:hover { text-decoration: underline; }
-    ul { list-style-type: disc; padding-left: 25px; }
+
     #calendar { 
       max-width: 100%; 
-      margin: 20px 0; 
+      margin: 35px 0; 
       background: white; 
-      border-radius: 8px; 
+      border-radius: 10px; 
       overflow: hidden; 
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08); 
+      border: 1px solid #e2e8f0;
     }
-    footer { margin-top: 40px; text-align: center; font-size: 0.9em; color: #777; }
+
+    footer { 
+      margin-top: 60px; 
+      text-align: center; 
+      font-size: 0.95em; 
+      color: #64748b; 
+      border-top: 1px solid #e2e8f0; 
+      padding-top: 25px;
+    }
+
+    /* Optional header/banner area */
+    .site-header {
+      text-align: center;
+      margin-bottom: 40px;
+      padding-bottom: 25px;
+      border-bottom: 3px solid #1a3c6d;
+    }
+    .site-header img {
+      max-width: 350px;
+      height: auto;
+      margin-bottom: 15px;
+    }
   </style>
 </head>
 <body>
 
-  <h1>Becoming Catholic</h1>
+  <div class="site-header">
+    <!-- Upload your parish logo or banner to repo as assets/parish-header.jpg -->
+    <!-- <img src="assets/parish-header.jpg" alt="Saint Thomas the Apostle Parish"> -->
+    <h1>Becoming Catholic</h1>
+  </div>
+
   <h2>The Order of Christian Initiation of Adults (OCIA)</h2>
 
   <p><strong>Become Catholic!</strong><br>
@@ -77,23 +136,22 @@
   <!-- ical.js for parsing ICS -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ical.js/1.5.0/ical.min.js"></script>
 
-  <!-- FullCalendar JS (global bundle includes core + dayGrid plugin) -->
+  <!-- FullCalendar JS -->
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.20/index.global.min.js"></script>
 
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       const calendarEl = document.getElementById('calendar');
       const calendar = new FullCalendar.Calendar(calendarEl, {
-        initialView: 'dayGridMonth',          // Month grid view
+        initialView: 'dayGridMonth',
         headerToolbar: {
           left: 'prev,next today',
           center: 'title',
-          right: 'dayGridMonth,timeGridWeek,listWeek'  // Optional: add week/list views
+          right: 'dayGridMonth,timeGridWeek,listWeek'
         },
-        height: 'auto',                       // Auto-adjust height
+        height: 'auto',
         events: function(fetchInfo, successCallback, failureCallback) {
           const icsUrl = 'https://stthomascda.org/icalendar434090.ics';
-
           fetch(icsUrl)
             .then(response => {
               if (!response.ok) throw new Error('Failed to fetch ICS');
@@ -103,26 +161,24 @@
               const jcal = ICAL.parse(icsText);
               const comp = new ICAL.Component(jcal);
               const vevents = comp.getAllSubcomponents('vevent');
-
               const events = [];
+              const now = new Date();
+              const futureLimit = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
 
               vevents.forEach(vevent => {
                 const event = new ICAL.Event(vevent);
-                const now = new Date();
-                const futureLimit = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate()); // Show up to 1 year ahead
-
                 if (event.isRecurring()) {
                   const iter = event.iterator();
                   let next = iter.next();
                   let count = 0;
-                  while (next && count < 50 && next.toJSDate() < futureLimit) {  // Limit to prevent overload
+                  while (next && count < 50 && next.toJSDate() < futureLimit) {
                     const start = next.toJSDate();
                     if (start > now) {
                       events.push({
                         title: event.summary || 'OCIA Event',
                         start: start.toISOString(),
                         end: event.hasEnd() ? event.endDate.toJSDate().toISOString() : null,
-                        allDay: !event.startDate.isDate // Infer all-day if no time component
+                        allDay: !event.startDate.isDate
                       });
                     }
                     next = iter.next();
@@ -140,7 +196,6 @@
                   }
                 }
               });
-
               successCallback(events);
             })
             .catch(error => {
@@ -149,16 +204,9 @@
             });
         },
         eventDidMount: function(info) {
-          // Optional tooltip on hover
           info.el.title = info.event.title + ' (' + info.event.start.toLocaleString() + ')';
-        },
-        loading: function(isLoading) {
-          if (isLoading) {
-            calendarEl.innerHTML = '<p style="text-align:center;padding:40px;">Loading calendar...</p>';
-          }
         }
       });
-
       calendar.render();
     });
   </script>
