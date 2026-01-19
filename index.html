@@ -8,9 +8,6 @@
   <!-- Google Fonts for elegant, parish-appropriate typography -->
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
 
-  <!-- FullCalendar CSS -->
-  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.20/index.global.min.css" rel="stylesheet">
-
   <style>
     body { 
       font-family: 'Roboto', Arial, Helvetica, sans-serif; 
@@ -63,7 +60,7 @@
     }
 
     .contact-text {
-      flex: 1 1 300px; /* Takes most space on wide screens */
+      flex: 1 1 300px;
     }
 
     .contact-image {
@@ -79,14 +76,27 @@
       object-fit: cover;
     }
 
-    #calendar { 
-      max-width: 100%; 
-      margin: 35px 0; 
-      background: white; 
-      border-radius: 10px; 
-      overflow: hidden; 
-      box-shadow: 0 4px 16px rgba(0,0,0,0.08); 
+    /* Responsive wrapper for Google Calendar iframe */
+    .responsive-iframe-wrapper {
+      position: relative;
+      padding-bottom: 75%;          /* Adjust this for taller/shorter view (75% = good for month view) */
+      height: 0;
+      overflow: hidden;
+      max-width: 100%;
+      background: #f8fafc;
+      border-radius: 10px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
       border: 1px solid #e2e8f0;
+      margin: 35px 0;
+    }
+
+    .responsive-iframe-wrapper iframe {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border: 0;
     }
 
     footer { 
@@ -98,7 +108,6 @@
       padding-top: 25px;
     }
 
-    /* Header with logo */
     .site-header {
       text-align: center;
       margin-bottom: 40px;
@@ -111,7 +120,6 @@
       margin-bottom: 15px;
     }
 
-    /* Responsive: stack contact on small screens */
     @media (max-width: 768px) {
       .contact {
         flex-direction: column;
@@ -119,13 +127,15 @@
       .contact-image img {
         max-width: 100%;
       }
+      .responsive-iframe-wrapper {
+        padding-bottom: 90%;  /* Taller on mobile for better readability */
+      }
     }
   </style>
 </head>
 <body>
 
   <div class="site-header">
-    <!-- Parish OCIA logo - upload to repo root or assets/ -->
     <img src="stthomasocia_logo.png" alt="Saint Thomas OCIA Logo">
     <h1>Becoming Catholic</h1>
   </div>
@@ -145,7 +155,6 @@
       <p><a href="https://forms.gle/aE6iyy3RnqoAAzbh6" target="_blank">OCIA Inquirer Form</a> (Google Form – fill out to get started!)</p>
     </div>
     <div class="contact-image">
-      <!-- Photo of Rodney & Bessie - upload to repo root or assets/ -->
       <img src="rodney_bessie_ocia_contact.webp" alt="Rodney & Bessie Geilenfeldt, OCIA Coordinators">
     </div>
   </div>
@@ -166,86 +175,12 @@
   </ul>
 
   <h3>OCIA Calendar</h3>
-  <p>Upcoming meetings and sessions (interactive month view – loaded directly from parish calendar):</p>
-  <div id="calendar"></div>
-
-  <!-- ical.js for parsing ICS -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/ical.js/1.5.0/ical.min.js"></script>
-
-  <!-- FullCalendar JS -->
-  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.20/index.global.min.js"></script>
-
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      const calendarEl = document.getElementById('calendar');
-      const calendar = new FullCalendar.Calendar(calendarEl, {
-        initialView: 'dayGridMonth',
-        headerToolbar: {
-          left: 'prev,next today',
-          center: 'title',
-          right: 'dayGridMonth,timeGridWeek,listWeek'
-        },
-        height: 'auto',
-        events: function(fetchInfo, successCallback, failureCallback) {
-          const icsUrl = 'https://stthomascda.org/icalendar434090.ics';
-          fetch(icsUrl)
-            .then(response => {
-              if (!response.ok) throw new Error('Failed to fetch ICS');
-              return response.text();
-            })
-            .then(icsText => {
-              const jcal = ICAL.parse(icsText);
-              const comp = new ICAL.Component(jcal);
-              const vevents = comp.getAllSubcomponents('vevent');
-              const events = [];
-              const now = new Date();
-              const futureLimit = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
-
-              vevents.forEach(vevent => {
-                const event = new ICAL.Event(vevent);
-                if (event.isRecurring()) {
-                  const iter = event.iterator();
-                  let next = iter.next();
-                  let count = 0;
-                  while (next && count < 50 && next.toJSDate() < futureLimit) {
-                    const start = next.toJSDate();
-                    if (start > now) {
-                      events.push({
-                        title: event.summary || 'OCIA Event',
-                        start: start.toISOString(),
-                        end: event.hasEnd() ? event.endDate.toJSDate().toISOString() : null,
-                        allDay: !event.startDate.isDate
-                      });
-                    }
-                    next = iter.next();
-                    count++;
-                  }
-                } else {
-                  const start = event.startDate.toJSDate();
-                  if (start > now) {
-                    events.push({
-                      title: event.summary || 'OCIA Event',
-                      start: start.toISOString(),
-                      end: event.hasEnd() ? event.endDate.toJSDate().toISOString() : null,
-                      allDay: !event.startDate.isDate
-                    });
-                  }
-                }
-              });
-              successCallback(events);
-            })
-            .catch(error => {
-              console.error('Calendar error:', error);
-              failureCallback(error);
-            });
-        },
-        eventDidMount: function(info) {
-          info.el.title = info.event.title + ' (' + info.event.start.toLocaleString() + ')';
-        }
-      });
-      calendar.render();
-    });
-  </script>
+  <p>Upcoming meetings and sessions (interactive month view – auto-updated from parish calendar):</p>
+  <div class="responsive-iframe-wrapper">
+    <iframe src="https://calendar.google.com/calendar/embed?height=600&wkst=1&ctz=America%2FLos_Angeles&showPrint=0&src=b212dXNhLm9yZ19tYWUzaXQ4cjBpaG0yYm9qdTlra2plNGwyMEBncm91cC5jYWxlbmRhci5nb29nbGUuY29t&src=MnNoZGx2ZTViZjhjM3VnZHJjZGFta2Z1M3Mxc2o0dm5AaW1wb3J0LmNhbGVuZGFyLmdvb2dsZS5jb20&color=%23ef6c00&color=%23616161" 
+            frameborder="0" 
+            scrolling="no"></iframe>
+  </div>
 
   <footer>
     <p>&copy; Saint Thomas the Apostle Parish | Coeur d'Alene, Idaho</p>
